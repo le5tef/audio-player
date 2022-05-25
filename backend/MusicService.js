@@ -16,7 +16,7 @@ class MusicService {
     }
 
     parseSongs(artist, album) {
-        const regexSong = /^(\d+-?\s?-?\s+)?(?<title>.*)\..*$/
+        const regexSong = /^(\d+-?\s?-?\d+?\s+)?(?<title>.*)\..*$/
         return fs.readdirSync(`${artistsFolder}/${artist}/${album}`)
             .filter((x) => mime.getType(`${artistsFolder}/${artist}/${album}/${x}`)?.startsWith("audio"))
             .map((song) => {

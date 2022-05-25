@@ -18,9 +18,9 @@
         <div class="player__title">{{ currentSong ? currentSong.title : '' }}</div>
         <div class="player__artist">{{ currentSong ? currentSong.artist : '' }}</div>
         <div class="player__progress mb-4">
-          <audio @loadedmetadata="updateDuration" @durationchange="updateDuration" @timeupdate="updateCurrentTime"
-                 @play="isPlaying=true" @pause="isPlaying=false" @ended="next" ref="audio" v-if="currentSong"
-                 :src="`${backendUrl}${currentSong.src}`"></audio>
+          <audio @volumechange="updateVolume" @loadedmetadata="updateDuration" @durationchange="updateDuration" @timeupdate="updateCurrentTime"
+                 @play="isPlaying=true" @pause="isPlaying=false" @ended="next" ref="audio"
+                 :src="currentSong?`${backendUrl}${currentSong.src}`:null"></audio>
           <v-slider hide-details @mousedown="startDrug" @mouseup="endDrug" @change="setDuration" color="pink lighten-1"
                     max="100" min="0" :value="progress"></v-slider>
 
@@ -41,7 +41,11 @@
             <v-icon color="pink lighten-1" size="35">mdi-skip-next</v-icon>
           </v-btn>
         </div>
-
+        <div class="player__volume d-flex justify-space-around align-center mt-5">
+          <v-icon color="pink lighten-1">mdi-volume-medium</v-icon>
+          <v-slider @change="setVolume" max="100" min="0" :value="volume" color="pink lighten-1" hide-details ></v-slider>
+          <v-icon color="pink lighten-1">mdi-volume-high</v-icon>
+        </div>
       </v-card-text>
     </v-card>
   </v-container>
@@ -54,6 +58,7 @@ export default {
     return {
       smallMode: false,
       currentTime: 0,
+      volume:0.5,
       duration: null,
       isPlaying: false,
       isPlayed: false,
@@ -75,12 +80,15 @@ export default {
       if (!this.duration) return 0
       return (this.currentTime / this.duration) * 100
     },
-    backendUrl(){
+    backendUrl() {
       return process.env.VUE_APP_BACKEND_URL
     }
   },
   mounted() {
     this.fetchAllSongs();
+    this.$nextTick(()=> {
+      this.$refs.audio.volume = this.volume
+    });
   },
   methods: {
     formatTime(secs) {
@@ -118,6 +126,13 @@ export default {
     },
     setDuration(val) {
       this.$refs.audio.currentTime = val * this.duration / 100
+    },
+    setVolume(val) {
+      this.$refs.audio.volume = val/100
+      console.log(val)
+    },
+    updateVolume(){
+      this.volume = this.$refs.audio.volume*100
     },
     async fetchAllSongs() {
       const response = await fetch(`${this.backendUrl}/api/random`)

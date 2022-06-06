@@ -20,10 +20,12 @@ class MusicService {
         return fs.readdirSync(`${artistsFolder}/${artist}/${album}`)
             .filter((x) => mime.getType(`${artistsFolder}/${artist}/${album}/${x}`)?.startsWith("audio"))
             .map((song) => {
-                console.log(song)
+                let videoFilename = song.substr(0, song.lastIndexOf(".")) + ".mp4"
+                let isVideoExist = fs.existsSync(`${artistsFolder}/${artist}/${album}/${videoFilename}`)
                 return {
                     title: song.match(regexSong).groups.title,
                     src: (`/${artistsFolder}/${artist}/${album}/${song}`),
+                    video: isVideoExist?`/${artistsFolder}/${artist}/${album}/${videoFilename}`:null
                 }
             })
     }

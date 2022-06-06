@@ -52,23 +52,48 @@
 </template>
 
 <script>
+import {eventBus} from '@/main'
 export default {
   name: "Player",
   data() {
     return {
       smallMode: false,
-      currentTime: 0,
       volume:0.5,
-      duration: null,
-      isPlaying: false,
       isPlayed: false,
-      currentSongId: null,
-      songs: [],
     }
   },
   computed: {
-    currentSong() {
-      return this.songs[this.currentSongId]
+    duration: {
+      get() { return this.$store.state.audio.duration},
+      set(val) {
+        this.$store.commit('audio/setDuration', val)
+      }
+    },
+    backendUrl(){
+      return process.env.VUE_APP_BACKEND_URL
+    },
+    progress() {
+      if (!this.duration) return 0
+      return (this.currentTime / this.duration) * 100
+    },
+    currentSong(){
+      return this.$store.getters['audio/currentSong']
+    },
+    currentTime:{
+      get(){
+        return this.$store.state.audio.currentTime
+      },
+      set(val){
+        this.$store.commit('audio/setCurrentTime',val)
+      }
+    },
+    isPlaying:{
+      get(){
+        return this.$store.state.audio.isPlaying
+      },
+      set(val){
+        this.$store.commit('audio/setIsPlaying',val)
+      }
     },
     currentTimeFormatted() {
       return this.formatTime(this.currentTime)
@@ -76,21 +101,24 @@ export default {
     durationTimeFormatted() {
       return this.formatTime(this.duration)
     },
-    progress() {
-      if (!this.duration) return 0
-      return (this.currentTime / this.duration) * 100
-    },
-    backendUrl() {
-      return process.env.VUE_APP_BACKEND_URL
-    }
+
+
   },
   mounted() {
-    this.fetchAllSongs();
+    this.$store.dispatch('audio/fetchAllSongs');
     this.$nextTick(()=> {
       this.$refs.audio.volume = this.volume
     });
   },
   methods: {
+    next() {
+      this.$store.dispatch('audio/next');
+      this.$nextTick(() => this.play())
+    },
+    prev() {
+      this.$store.dispatch('audio/prev');
+      this.$nextTick(() => this.play())
+    },
     formatTime(secs) {
       let minutes = Math.floor(secs / 60)
       let seconds = Math.floor(secs % 60)
@@ -102,22 +130,7 @@ export default {
     pause() {
       this.$refs.audio.pause()
     },
-    next() {
-      if (this.currentSongId < this.songs.length) {
-        this.currentSongId += 1
-      } else {
-        this.currentSongId = 0
-      }
-      this.$nextTick(this.play)
-    },
-    prev() {
-      if (this.currentSongId > 0) {
-        this.currentSongId -= 1
-      } else {
-        this.currentSongId = this.songs.length
-      }
-      this.$nextTick(this.play)
-    },
+
     updateCurrentTime() {
       this.currentTime = this.$refs.audio.currentTime
     },
@@ -126,6 +139,7 @@ export default {
     },
     setDuration(val) {
       this.$refs.audio.currentTime = val * this.duration / 100
+      this.$nextTick(() => eventBus.$emit('updateCurrentTime', this.$refs.audio.currentTime))
     },
     setVolume(val) {
       this.$refs.audio.volume = val/100
@@ -134,34 +148,14 @@ export default {
     updateVolume(){
       this.volume = this.$refs.audio.volume*100
     },
-    async fetchAllSongs() {
-      const response = await fetch(`${this.backendUrl}/api/random`)
-      this.songs = await response.json()
-      this.shufflePlaylist()
-      this.currentSongId = 0
-    },
+
     startDrug() {
       this.pause()
     },
     endDrug() {
       this.play()
     },
-    shufflePlaylist() {
-      let currentIndex = this.songs.length, randomIndex;
 
-      // While there remain elements to shuffle.
-      while (currentIndex !== 0) {
-
-        // Pick a remaining element.
-        randomIndex = Math.floor(Math.random() * currentIndex);
-        currentIndex--;
-
-        // And swap it with the current element.
-        [this.songs[currentIndex], this.songs[randomIndex]] = [
-          this.songs[randomIndex], this.songs[currentIndex]];
-      }
-
-    }
   }
 }
 </script>
